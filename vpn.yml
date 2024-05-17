@@ -1,0 +1,87 @@
+---
+- name: vpn-server
+  hosts: vpn-server
+  become: true
+  tasks:
+  # Обновление и установка пакетов 
+  - name: install base tools
+    apt:
+      name:
+        - openvpn
+        - traceroute
+        - iperf3
+      state: present
+      update_cache: true
+  # Отключаем UFW удаляем из автозагрузки
+  - name: disable ufw service
+    service:
+      name: ufw
+      state: stopped
+      enabled: false
+  # Cоздаем файл-ключ 
+  - name: shell
+    shell: "{{item}}"
+    with_items:
+      - openvpn --genkey secret /etc/openvpn/static.key
+  # Копируем файлы conf 
+  - name: set server.conf
+    copy:
+      src: vpnserver/server.conf
+      dest: /etc/openvpn/server.conf
+  - name: set openvpn@.service
+    copy:
+      src: openvpn@.service
+      dest: /etc/systemd/system/
+  - name: static.key
+    fetch:
+      src: /etc/openvpn/static.key
+      dest: /home/sergey/otus/vpn/
+  # Перезапускаем добавляем в автозагрузку
+  - name: restart 
+    service:
+      name: openvpn@server 
+      state: restarted
+      enabled: true
+  tags:
+    vpn-server
+
+- name: vpn-client
+  hosts: vpn-client
+  become: true
+  tasks:
+  # Обновление и установка пакетов 
+  - name: install base tools
+    apt:
+      name:
+        - openvpn
+        - traceroute
+        - iperf3
+      state: present
+      update_cache: true
+  # Отключаем UFW удаляем из автозагрузки
+  - name: disable ufw service
+    service:
+      name: ufw
+      state: stopped
+      enabled: false
+  # Копируем файлы conf 
+  - name: set server.conf
+    copy:
+      src: vpnclient/server.conf
+      dest: /etc/openvpn/
+  - name: set openvpn@.service
+    copy:
+      src: openvpn@.service
+      dest: /etc/systemd/system/
+  - name: static.key
+    copy:
+      src: vpn-server/etc/openvpn/static.key
+      dest: /etc/openvpn/static.key
+  # Перезапускаем добавляем в автозагрузку
+  - name: restart 
+    service:
+      name: openvpn@server 
+      state: restarted
+      enabled: true
+  tags:
+    vpn-client

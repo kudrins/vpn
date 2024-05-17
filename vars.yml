@@ -1,0 +1,18 @@
+---
+vcenter_hostname: 10.100.10.1
+vcenter_username: administrator@vsphere.local
+vcenter_password: password
+
+servers:
+  - { name: vpn-server, vlan: VMs11, memory_mb: 2048, hostname: vpn-server,
+      ip: 10.100.11.129, mask: 255.255.255.0, gateway: 10.100.11.254 }
+    
+  - { name: vpn-client, vlan: VMs11, memory_mb: 2048, hostname: vpn-client, 
+      ip: 10.100.11.130, mask: 255.255.255.0, gateway: 10.100.11.254 }
+
+  - { name: ras, vlan: VMs11, memory_mb: 2048, hostname: ras, 
+      ip: 10.100.11.131, mask: 255.255.255.0, gateway: 10.100.11.254 }
+
+  - { name: client, vlan: VMs12, memory_mb: 2048, hostname: client,
+      ip: 10.100.12.133, mask: 255.255.255.0, gateway: 10.100.12.254 }
+    

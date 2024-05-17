@@ -1,0 +1,9 @@
+[all:vars]
+ansible_user=root
+ansible_ssh_pass=password
+
+[servers]
+vpn-server ansible_host=10.100.11.129
+vpn-client ansible_host=10.100.11.130
+ras ansible_host=10.100.11.131
+client ansible_host=10.100.12.133

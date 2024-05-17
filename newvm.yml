@@ -1,0 +1,34 @@
+---
+- name: deploy vms
+  hosts: localhost
+  vars_files: vars.yml
+  become: false
+  gather_facts: false
+  tasks:
+  - name: deploy servers
+    local_action:
+      module: vmware_guest
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: False
+      datacenter: Datacenter
+      datastore: datastore_6TB
+      folder: otus_network
+      template: t_ubuntu_s
+      name: "{{item.name}}"
+      hardware:
+        memory_mb: "{{item.memory_mb}}"
+      networks:
+        - name: "{{item.vlan}}"
+          ip: "{{item.ip}}"
+          netmask: "{{item.mask}}"
+          gateway: "{{item.gateway}}"
+      customization:
+        hostname: "{{item.hostname}}"
+        dns_servers: [10.100.11.200]
+      state: powered-on
+      wait_for_ip_address: true
+    with_items: "{{servers}}"
+
+

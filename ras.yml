@@ -1,0 +1,87 @@
+---
+- name: ras
+  hosts: ras
+  become: true
+  tasks:
+  # Обновление и установка пакетов 
+  - name: install openvpn easy-rsa
+    apt:
+      name:
+        - openvpn
+        - easy-rsa
+      state: present
+      update_cache: true
+  # Отключаем UFW удаляем из автозагрузки
+  - name: disable ufw service
+    service:
+      name: ufw
+      state: stopped
+      enabled: false
+  # Копируем файлы conf 
+  - name: set server.conf
+    copy:
+      src: ras/server.conf
+      dest: /etc/openvpn/
+  - name: set nat
+    copy:
+      src: ras/nat
+      dest: /etc/openvpn/
+  - name: set client.sh
+    copy:
+      src: ras/client.sh
+      dest: /etc/openvpn/
+   # 
+  - name: shell
+    shell: "{{item}}"
+    with_items:
+      - groupadd nobody
+      - usermod -a -G nobody nobody
+      - chmod 755 /etc/openvpn/nat
+      - chmod 755 /etc/openvpn/client.sh
+      - echo "@reboot /etc/openvpn/nat" | crontab -u root -
+      - /etc/openvpn/nat
+      - mkdir /etc/openvpn/keys
+      - cp -r /usr/share/easy-rsa /etc
+      - cp /etc/easy-rsa/vars.example /etc/easy-rsa/vars
+      - sed -i '/_DN/c\set_var EASYRSA_DN "org"' /etc/easy-rsa/vars
+      - sed -i '/_PKI/c\set_var EASYRSA_PKI "/etc/easy-rsa/pki"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_COUNTRY/c\set_var EASYRSA_REQ_COUNTRY "ru"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_PROVINCE/c\set_var EASYRSA_REQ_PROVINCE "Sankt-Petersburg"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_CITY/c\set_var EASYRSA_REQ_CITY "Sankt-Petersburg"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_ORG/c\set_var EASYRSA_REQ_ORG "SKudrin Co"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_EMAIL/c\set_var EASYRSA_REQ_EMAIL "admin@skudrin.ru"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_CN/c\set_var EASYRSA_REQ_CN "Home"' /etc/easy-rsa/vars
+      - sed -i '/_REQ_OU/c\set_var EASYRSA_REQ_OU "IT"' /etc/easy-rsa/vars
+      - /etc/easy-rsa/easyrsa init-pki
+  tags:
+    ras
+# Клиент ubuntu
+- name: client
+  hosts: client
+  become: true
+  tasks:
+  # Обновление и установка пакетов 
+  - name: openvpn
+    apt:
+      name:
+        - openvpn
+      state: present
+      update_cache: true
+  # Отключаем UFW удаляем из автозагрузки
+  - name: disable ufw service
+    service:
+      name: ufw
+      state: stopped
+      enabled: false
+  # Копируем файл client.conf 
+  - name: set client.conf
+    copy:
+      src: client.conf
+      dest: /etc/openvpn/
+  # параметр iroute клиента
+  - name: shell
+    shell: "{{item}}"
+    with_items:
+      - echo 'iroute 10.10.10.0 255.255.255.0' > /etc/openvpn/client/client
+  tags:
+    client
